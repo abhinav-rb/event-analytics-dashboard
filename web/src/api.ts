@@ -1,8 +1,15 @@
-import type { Analytics } from "./types";
+import type { Analytics, EventRecord } from "./types";
 
 export async function fetchAnalytics(): Promise<Analytics> {
   const res = await fetch("/api/analytics");
   if (!res.ok) throw new Error(`Analytics request failed: ${res.status}`);
+  return res.json();
+}
+
+/** Fetch the raw normalized events (used by the "All events" tab). */
+export async function fetchEvents(limit = 1000): Promise<{ total: number; events: EventRecord[] }> {
+  const res = await fetch(`/api/events?limit=${limit}`);
+  if (!res.ok) throw new Error(`Events request failed: ${res.status}`);
   return res.json();
 }
 

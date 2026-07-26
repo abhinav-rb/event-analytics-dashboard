@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchAnalytics, scrape } from "./api";
+import { fetchAnalytics, fetchEvents, scrape } from "./api";
 import type { Analytics, EventRecord } from "./types";
 import {
   MINT,
@@ -29,7 +29,14 @@ const PLACES: Array<{ slug: string; label: string }> = [
 // Static feed filter pills (match the cities present in the data).
 const CITY_FILTERS = ["San Francisco", "New York", "Brooklyn", "Chicago", "Online"];
 
-const NAV = ["Overview", "All events", "Cities", "Categories", "Collect"];
+type TabId = "overview" | "events" | "cities" | "categories" | "collect";
+const TABS: Array<{ id: TabId; label: string; title: string; sub: string }> = [
+  { id: "overview", label: "Overview", title: "What's on", sub: "" },
+  { id: "events", label: "All events", title: "All events", sub: "Everything we've collected, soonest first" },
+  { id: "cities", label: "Cities", title: "Cities", sub: "Where events are happening" },
+  { id: "categories", label: "Categories", title: "Kinds of events", sub: "What people are putting on" },
+  { id: "collect", label: "Collect", title: "Collect events", sub: "Pull the latest listings from Eventbrite" },
+];
 
 const REFRESH_MS = 5000;
 const CHART_DAYS = 30;
@@ -60,10 +67,12 @@ function buildDaySeries(analytics: Analytics, today: string) {
 
 export function App() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [allEvents, setAllEvents] = useState<EventRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number>(() => Date.now());
   const [now, setNow] = useState<number>(() => Date.now());
 
+  const [tab, setTab] = useState<TabId>("overview");
   const [place, setPlace] = useState(PLACES[0].slug);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -76,8 +85,9 @@ export function App() {
 
   const load = useCallback(async () => {
     try {
-      const a = await fetchAnalytics();
+      const [a, ev] = await Promise.all([fetchAnalytics(), fetchEvents()]);
       setAnalytics(a);
+      setAllEvents(ev.events);
       setError(null);
       setLastUpdatedAt(Date.now());
     } catch (err) {
@@ -85,7 +95,7 @@ export function App() {
     }
   }, []);
 
-  // Initial load + poll analytics in place; tick a clock for "refreshed …".
+  // Initial load + poll in place; tick a clock for "refreshed …".
   useEffect(() => {
     void load();
     const poll = setInterval(load, REFRESH_MS);
@@ -122,7 +132,7 @@ export function App() {
 
   const today = todayISO();
 
-  // ---- Derived view data -----------------------------------------------------
+  // ---- Derived data for the Overview tab -------------------------------------
   const view = useMemo(() => {
     if (!analytics) return null;
 
@@ -155,24 +165,47 @@ export function App() {
       count: f.count,
     }));
 
-    // Busiest day, from the peak eventsOverTime bucket.
     const peak = analytics.eventsOverTime.reduce(
       (best, d) => (d.count > best.count ? d : best),
       { label: today, count: 0 },
     );
 
-    const feedAll: EventRecord[] = analytics.recentEvents.filter(
-      (e) => cityFilter === "all" || e.city === cityFilter,
-    );
-    const feed = feedAll.slice(0, FEED_LIMIT);
+    const feed = analytics.recentEvents
+      .filter((e) => cityFilter === "all" || e.city === cityFilter)
+      .slice(0, FEED_LIMIT);
 
     return { total, days, maxDay, onToday, places, cats, cities, formats, peak, feed };
   }, [analytics, cityFilter, today]);
 
+  const meta = TABS.find((t) => t.id === tab)!;
   const collectLabel = busy ? "Collecting…" : "Collect events";
   const refreshedText = relativeTime(lastUpdatedAt, now);
   const lastChecked = clock(
     `${new Date(lastUpdatedAt).getHours()}:${String(new Date(lastUpdatedAt).getMinutes()).padStart(2, "0")}`,
+  );
+
+  const collectControl = (
+    <div className="collect">
+      <div className="collect-field">
+        <span className="collect-label">Look for events in</span>
+        <select
+          value={place}
+          onChange={(e) => setPlace(e.target.value)}
+          disabled={busy}
+          aria-label="City to collect events from"
+        >
+          {PLACES.map((p) => (
+            <option key={p.slug} value={p.slug}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <button className="collect-btn" onClick={collect} disabled={busy}>
+        {busy && <span className="spinner" />}
+        <span>{collectLabel}</span>
+      </button>
+    </div>
   );
 
   return (
@@ -190,11 +223,15 @@ export function App() {
         </div>
 
         <nav className="nav">
-          {NAV.map((label, i) => (
-            <div key={label} className={`nav-item${i === 0 ? " active" : ""}`}>
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              className={`nav-item${t.id === tab ? " active" : ""}`}
+              onClick={() => setTab(t.id)}
+            >
               <span className="nav-dot" />
-              <span>{label}</span>
-            </div>
+              <span>{t.label}</span>
+            </button>
           ))}
         </nav>
 
@@ -217,41 +254,23 @@ export function App() {
       <main className="main">
         <header className="topbar">
           <div className="title-block">
-            <h1 className="title">What's on</h1>
+            <h1 className="title">{meta.title}</h1>
             <div className="subtitle">
               <span className="live-dot">
                 <span className="live-ring" />
                 <span className="live-core" />
               </span>
               <span>
-                {(view?.total ?? 0).toLocaleString("en-US")} real events, across six places
+                {tab === "overview"
+                  ? `${(view?.total ?? 0).toLocaleString("en-US")} real events, across six places`
+                  : meta.sub}
               </span>
               <span className="slash">/</span>
               <span>refreshed {refreshedText}</span>
             </div>
           </div>
 
-          <div className="collect">
-            <div className="collect-field">
-              <span className="collect-label">Look for events in</span>
-              <select
-                value={place}
-                onChange={(e) => setPlace(e.target.value)}
-                disabled={busy}
-                aria-label="City to collect events from"
-              >
-                {PLACES.map((p) => (
-                  <option key={p.slug} value={p.slug}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button className="collect-btn" onClick={collect} disabled={busy}>
-              {busy && <span className="spinner" />}
-              <span>{collectLabel}</span>
-            </button>
-          </div>
+          {tab !== "collect" && collectControl}
         </header>
 
         {status && <div className={`banner ${statusTone}`}>{status}</div>}
@@ -262,193 +281,348 @@ export function App() {
           </div>
         )}
 
-        {view && (
-          <>
-            {/* ---- KPI row ---- */}
-            <section className="kpis">
-              <Kpi label="Events" value={view.total.toLocaleString("en-US")} hint="collected from Eventbrite" />
-              <Kpi label="On today" value={String(view.onToday)} hint="starting in the next few hours" />
-              <Kpi label="Places" value={String(view.places)} hint="cities, plus online" />
-              <Kpi label="Kinds" value={String(analytics!.uniqueCategories)} hint="music through to faith" />
-              <Kpi
-                label="Online"
-                value={`${Math.round(analytics!.onlineShare * 100)}%`}
-                hint="join from anywhere"
-              />
-            </section>
+        {!analytics && !error && <p className="loading">Loading analytics…</p>}
 
-            {/* ---- Chart + categories ---- */}
-            <section className="row row-1-62">
-              <div className="card chart-card">
-                <div className="card-head">
-                  <div className="head-text">
-                    <h2>When they're happening</h2>
-                    <span className="head-sub">Events per day, from today onward</span>
-                  </div>
-                  <div className="legend">
-                    <span className="legend-item">
-                      <span className="sw" style={{ background: MINT }} />
-                      on sale
-                    </span>
-                    <span className="legend-item">
-                      <span className="sw" style={{ background: MINT_HI }} />
-                      today
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  className="plot"
-                  onMouseLeave={() => setHoveredDay(null)}
-                >
-                  <div className="gridlines">
-                    <div /><div /><div /><div />
-                  </div>
-                  {view.days.map((d, i) => (
-                    <div
-                      key={d.iso}
-                      className="bar-col"
-                      onMouseEnter={() => setHoveredDay(i)}
-                    >
-                      <div
-                        className="bar"
-                        style={{
-                          height: `${((d.count / view.maxDay) * 100).toFixed(1)}%`,
-                          background:
-                            hoveredDay === i ? "#ffffff" : d.iso === today ? MINT_HI : MINT,
-                        }}
-                      />
-                    </div>
-                  ))}
-                  {hoveredDay != null && (
-                    <div
-                      className="tip"
-                      style={{ left: `${(((hoveredDay + 0.5) / CHART_DAYS) * 100).toFixed(2)}%` }}
-                    >
-                      <div className="tip-day">{dayLabel(view.days[hoveredDay].iso, today)}</div>
-                      <div className="tip-val">
-                        {view.days[hoveredDay].count === 0
-                          ? "Nothing on"
-                          : view.days[hoveredDay].count === 1
-                            ? "1 event"
-                            : `${view.days[hoveredDay].count} events`}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="axis">
-                  <span>Today</span>
-                  <span>This weekend</span>
-                  <span>Next week</span>
-                  <span>Mid-August</span>
-                  <span>Late August</span>
-                </div>
-              </div>
-
-              <div className="card">
-                <div className="head-text">
-                  <h2>What kind of events</h2>
-                  <span className="head-sub">Music is running away with it</span>
-                </div>
-                <div className="bars-list">
-                  {view.cats.map((c) => (
-                    <div key={c.label} className="bar-row">
-                      <div className="bar-row-head">
-                        <span className="bar-row-label">{c.label}</span>
-                        <span className="bar-row-meta">
-                          {c.count} <span className="mid">·</span> {c.pct}
-                        </span>
-                      </div>
-                      <div className="track">
-                        <div className="fill" style={{ width: c.w, background: c.color }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* ---- Feed + right column ---- */}
-            <section className="row row-1-62 align-start">
-              <div className="card feed-card">
-                <div className="card-head feed-head">
-                  <div className="head-text">
-                    <h2>Coming up next</h2>
-                    <span className="head-sub">Soonest first · tap any event for tickets</span>
-                  </div>
-                  <div className="pills">
-                    <Pill label="Everywhere" id="all" active={cityFilter === "all"} onClick={setCityFilter} />
-                    {CITY_FILTERS.map((c) => (
-                      <Pill key={c} label={c} id={c} active={cityFilter === c} onClick={setCityFilter} />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="feed">
-                  {view.feed.map((e) => (
-                    <FeedRow key={e.id} event={e} today={today} />
-                  ))}
-                </div>
-                <div className="feed-foot">
-                  {view.feed.length
-                    ? `Showing the next ${view.feed.length} of ${view.total.toLocaleString("en-US")} events`
-                    : "Nothing here yet — try collecting events for this place."}
-                </div>
-              </div>
-
-              <div className="right-col">
-                <div className="card">
-                  <div className="head-text">
-                    <h2>Where they are</h2>
-                    <span className="head-sub">One in four happens online</span>
-                  </div>
-                  <div className="bars-list">
-                    {view.cities.map((c) => (
-                      <div key={c.label} className="bar-row">
-                        <div className="bar-row-head">
-                          <span className="bar-row-label">{c.label}</span>
-                          <span className="bar-row-meta">{c.count}</span>
-                        </div>
-                        <div className="track">
-                          <div className="fill" style={{ width: c.w, background: c.color }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="card">
-                  <div className="head-text">
-                    <h2>How people gather</h2>
-                    <span className="head-sub">Parties, talks and shows lead</span>
-                  </div>
-                  <div className="format-list">
-                    {view.formats.map((f) => (
-                      <div key={f.label} className="format-row">
-                        <span className="bar-row-label">{f.label}</span>
-                        <span className="format-count">{f.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="callout">
-                    <span className="callout-title">Busiest night</span>
-                    <span className="callout-body">
-                      {longDate(view.peak.label)} — {view.peak.count} events, the busiest day on the
-                      calendar.
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </>
+        {analytics && view && tab === "overview" && (
+          <Overview
+            view={view}
+            analytics={analytics}
+            today={today}
+            hoveredDay={hoveredDay}
+            setHoveredDay={setHoveredDay}
+            cityFilter={cityFilter}
+            setCityFilter={setCityFilter}
+          />
         )}
 
-        {!view && !error && <p className="loading">Loading analytics…</p>}
+        {analytics && tab === "events" && (
+          <AllEvents
+            events={allEvents}
+            today={today}
+            cityFilter={cityFilter}
+            setCityFilter={setCityFilter}
+          />
+        )}
+
+        {analytics && tab === "cities" && <Cities analytics={analytics} />}
+
+        {analytics && tab === "categories" && <Categories analytics={analytics} />}
+
+        {tab === "collect" && (
+          <Collect
+            control={collectControl}
+            places={PLACES}
+            total={view?.total ?? 0}
+            lastChecked={lastChecked}
+          />
+        )}
       </main>
     </div>
   );
 }
+
+// ---- Overview tab (the full dashboard) ---------------------------------------
+
+function Overview({
+  view,
+  analytics,
+  today,
+  hoveredDay,
+  setHoveredDay,
+  cityFilter,
+  setCityFilter,
+}: {
+  view: any;
+  analytics: Analytics;
+  today: string;
+  hoveredDay: number | null;
+  setHoveredDay: (i: number | null) => void;
+  cityFilter: string;
+  setCityFilter: (id: string) => void;
+}) {
+  return (
+    <>
+      <section className="kpis">
+        <Kpi label="Events" value={view.total.toLocaleString("en-US")} hint="collected from Eventbrite" />
+        <Kpi label="On today" value={String(view.onToday)} hint="starting in the next few hours" />
+        <Kpi label="Places" value={String(view.places)} hint="cities, plus online" />
+        <Kpi label="Kinds" value={String(analytics.uniqueCategories)} hint="music through to faith" />
+        <Kpi label="Online" value={`${Math.round(analytics.onlineShare * 100)}%`} hint="join from anywhere" />
+      </section>
+
+      <section className="row row-1-62">
+        <div className="card chart-card">
+          <div className="card-head">
+            <div className="head-text">
+              <h2>When they're happening</h2>
+              <span className="head-sub">Events per day, from today onward</span>
+            </div>
+            <div className="legend">
+              <span className="legend-item">
+                <span className="sw" style={{ background: MINT }} />
+                on sale
+              </span>
+              <span className="legend-item">
+                <span className="sw" style={{ background: MINT_HI }} />
+                today
+              </span>
+            </div>
+          </div>
+
+          <div className="plot" onMouseLeave={() => setHoveredDay(null)}>
+            <div className="gridlines">
+              <div /><div /><div /><div />
+            </div>
+            {view.days.map((d: { iso: string; count: number }, i: number) => (
+              <div key={d.iso} className="bar-col" onMouseEnter={() => setHoveredDay(i)}>
+                <div
+                  className="bar"
+                  style={{
+                    height: `${((d.count / view.maxDay) * 100).toFixed(1)}%`,
+                    background: hoveredDay === i ? "#ffffff" : d.iso === today ? MINT_HI : MINT,
+                  }}
+                />
+              </div>
+            ))}
+            {hoveredDay != null && (
+              <div
+                className="tip"
+                style={{ left: `${(((hoveredDay + 0.5) / CHART_DAYS) * 100).toFixed(2)}%` }}
+              >
+                <div className="tip-day">{dayLabel(view.days[hoveredDay].iso, today)}</div>
+                <div className="tip-val">
+                  {view.days[hoveredDay].count === 0
+                    ? "Nothing on"
+                    : view.days[hoveredDay].count === 1
+                      ? "1 event"
+                      : `${view.days[hoveredDay].count} events`}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="axis">
+            <span>Today</span>
+            <span>This weekend</span>
+            <span>Next week</span>
+            <span>Mid-August</span>
+            <span>Late August</span>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="head-text">
+            <h2>What kind of events</h2>
+            <span className="head-sub">Music is running away with it</span>
+          </div>
+          <div className="bars-list">
+            {view.cats.map((c: any) => (
+              <BarRow key={c.label} label={c.label} color={c.color} width={c.w} meta={`${c.count} · ${c.pct}`} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="row row-1-62 align-start">
+        <div className="card feed-card">
+          <div className="card-head feed-head">
+            <div className="head-text">
+              <h2>Coming up next</h2>
+              <span className="head-sub">Soonest first · tap any event for tickets</span>
+            </div>
+            <CityPills value={cityFilter} onChange={setCityFilter} />
+          </div>
+
+          <div className="feed">
+            {view.feed.map((e: EventRecord) => (
+              <FeedRow key={e.id} event={e} today={today} />
+            ))}
+          </div>
+          <div className="feed-foot">
+            {view.feed.length
+              ? `Showing the next ${view.feed.length} of ${view.total.toLocaleString("en-US")} events`
+              : "Nothing here yet — try collecting events for this place."}
+          </div>
+        </div>
+
+        <div className="right-col">
+          <div className="card">
+            <div className="head-text">
+              <h2>Where they are</h2>
+              <span className="head-sub">One in four happens online</span>
+            </div>
+            <div className="bars-list">
+              {view.cities.map((c: any) => (
+                <BarRow key={c.label} label={c.label} color={c.color} width={c.w} meta={String(c.count)} />
+              ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="head-text">
+              <h2>How people gather</h2>
+              <span className="head-sub">Parties, talks and shows lead</span>
+            </div>
+            <div className="format-list">
+              {view.formats.map((f: any) => (
+                <div key={f.label} className="format-row">
+                  <span className="bar-row-label">{f.label}</span>
+                  <span className="format-count">{f.count}</span>
+                </div>
+              ))}
+            </div>
+            <div className="callout">
+              <span className="callout-title">Busiest night</span>
+              <span className="callout-body">
+                {longDate(view.peak.label)} — {view.peak.count} events, the busiest day on the calendar.
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+// ---- All events tab ----------------------------------------------------------
+
+function AllEvents({
+  events,
+  today,
+  cityFilter,
+  setCityFilter,
+}: {
+  events: EventRecord[];
+  today: string;
+  cityFilter: string;
+  setCityFilter: (id: string) => void;
+}) {
+  const rows = useMemo(() => {
+    return events
+      .filter((e) => cityFilter === "all" || e.city === cityFilter)
+      .sort((a, b) =>
+        a.startDate === b.startDate
+          ? a.startTime.localeCompare(b.startTime)
+          : a.startDate.localeCompare(b.startDate),
+      );
+  }, [events, cityFilter]);
+
+  return (
+    <div className="card feed-card">
+      <div className="card-head feed-head">
+        <div className="head-text">
+          <h2>All events</h2>
+          <span className="head-sub">
+            {rows.length.toLocaleString("en-US")} of {events.length.toLocaleString("en-US")} events
+          </span>
+        </div>
+        <CityPills value={cityFilter} onChange={setCityFilter} />
+      </div>
+      <div className="feed feed-scroll">
+        {rows.map((e) => (
+          <FeedRow key={e.id} event={e} today={today} />
+        ))}
+      </div>
+      <div className="feed-foot">
+        {rows.length ? `${rows.length} events` : "Nothing here yet — try collecting events for this place."}
+      </div>
+    </div>
+  );
+}
+
+// ---- Cities tab --------------------------------------------------------------
+
+function Cities({ analytics }: { analytics: Analytics }) {
+  const max = analytics.byCity[0]?.count ?? 1;
+  return (
+    <div className="card panel-narrow">
+      <div className="head-text">
+        <h2>Cities</h2>
+        <span className="head-sub">Where events are happening, most first</span>
+      </div>
+      <div className="bars-list">
+        {analytics.byCity.map((c, i) => (
+          <BarRow
+            key={c.label}
+            label={c.label}
+            color={CITY_COLORS[i % CITY_COLORS.length]}
+            width={`${((c.count / max) * 100).toFixed(0)}%`}
+            meta={String(c.count)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---- Categories tab ----------------------------------------------------------
+
+function Categories({ analytics }: { analytics: Analytics }) {
+  const max = analytics.byCategory[0]?.count ?? 1;
+  const total = analytics.totalEvents || 1;
+  return (
+    <div className="card panel-narrow">
+      <div className="head-text">
+        <h2>Kinds of events</h2>
+        <span className="head-sub">Every category we've seen, most first</span>
+      </div>
+      <div className="bars-list">
+        {analytics.byCategory.map((c) => (
+          <BarRow
+            key={c.label}
+            label={friendlyCat(c.label)}
+            color={catColor(c.label)}
+            width={`${((c.count / max) * 100).toFixed(0)}%`}
+            meta={`${c.count} · ${Math.round((c.count / total) * 100)}%`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---- Collect tab -------------------------------------------------------------
+
+function Collect({
+  control,
+  places,
+  total,
+  lastChecked,
+}: {
+  control: React.ReactNode;
+  places: Array<{ slug: string; label: string }>;
+  total: number;
+  lastChecked: string;
+}) {
+  return (
+    <div className="card panel-narrow collect-panel">
+      <div className="head-text">
+        <h2>Collect events</h2>
+        <span className="head-sub">Pull the latest listings straight from Eventbrite</span>
+      </div>
+      <p className="prose">
+        Pick a place and we'll scrape its public Eventbrite listings, normalize each one, and fold any
+        new events into the list. Nothing is duplicated — collecting the same place twice only adds
+        what's new.
+      </p>
+      {control}
+      <div className="collect-meta">
+        <div className="collect-places">
+          {places.map((p) => (
+            <span key={p.slug} className="place-chip">
+              {p.label}
+            </span>
+          ))}
+        </div>
+        <div className="status-line">
+          {total.toLocaleString("en-US")} events in the list · last checked {lastChecked}.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Shared building blocks --------------------------------------------------
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
@@ -456,6 +630,31 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint: strin
       <span className="kpi-label">{label}</span>
       <span className="kpi-value">{value}</span>
       <span className="kpi-hint">{hint}</span>
+    </div>
+  );
+}
+
+function BarRow({ label, color, width, meta }: { label: string; color: string; width: string; meta: string }) {
+  return (
+    <div className="bar-row">
+      <div className="bar-row-head">
+        <span className="bar-row-label">{label}</span>
+        <span className="bar-row-meta">{meta}</span>
+      </div>
+      <div className="track">
+        <div className="fill" style={{ width, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function CityPills({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  return (
+    <div className="pills">
+      <Pill label="Everywhere" id="all" active={value === "all"} onClick={onChange} />
+      {CITY_FILTERS.map((c) => (
+        <Pill key={c} label={c} id={c} active={value === c} onClick={onChange} />
+      ))}
     </div>
   );
 }
@@ -481,7 +680,8 @@ function Pill({
 function FeedRow({ event, today }: { event: EventRecord; today: string }) {
   const [imgOk, setImgOk] = useState(true);
   const color = catColor(event.category);
-  const place = event.isOnline || event.city === "Online" ? "Online" : `${event.venue ?? ""}, ${event.city ?? ""}`;
+  const place =
+    event.isOnline || event.city === "Online" ? "Online" : `${event.venue ?? ""}, ${event.city ?? ""}`;
   const isToday = event.startDate === today;
 
   return (
