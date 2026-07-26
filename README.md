@@ -39,7 +39,7 @@ Events are collected two ways:
 
 - **Language:** TypeScript (throughout — scraper, API, and dashboard)
 - **Backend:** Node.js + Express
-- **Frontend:** React + Vite + [Recharts](https://recharts.org/)
+- **Frontend:** React + Vite, hand-built CSS (Instrument Sans), following the design in [`design/HANDOFF.md`](design/HANDOFF.md)
 - **Storage:** In-memory (a `Map` keyed by event id — trivially swappable for SQLite/Postgres behind the same interface)
 - **Tooling:** npm workspaces monorepo, `tsx` for dev
 
@@ -57,9 +57,12 @@ event-analytics-dashboard/
 │       └── types.ts          # Domain types
 ├── web/                      # React dashboard (TypeScript)
 │   └── src/
-│       ├── App.tsx           # Dashboard UI + charts
+│       ├── App.tsx           # Dashboard UI (KPIs, day chart, breakdowns, feed)
+│       ├── theme.ts          # Design tokens + copy-translation layer
+│       ├── styles.css        # Styling (matches the design handoff)
 │       ├── api.ts            # API client
 │       └── types.ts          # Shared response types
+├── design/                   # UI handoff reference (see design/HANDOFF.md)
 └── package.json              # npm workspaces root
 ```
 

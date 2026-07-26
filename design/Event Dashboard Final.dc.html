@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin:0; padding:0; background:#0a0b0d; }
+  * { box-sizing: border-box; }
+  a { color:#7fe0b0; text-decoration:none; }
+  a:hover { color:#a6ecc9; }
+  ::selection { background:#7fe0b0; color:#0a0b0d; }
+  @keyframes pulseDot { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.35; transform:scale(.8); } }
+  @keyframes ringOut { 0% { transform:scale(.6); opacity:.7; } 100% { transform:scale(2.4); opacity:0; } }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#0a0b0d; color:#e9eaee; font-family:'Instrument Sans', Helvetica, sans-serif; display:grid; grid-template-columns:224px 1fr;">
+
+  <aside style="border-right:1px solid rgba(255,255,255,.07); padding:22px 16px; display:flex; flex-direction:column; gap:26px; position:sticky; top:0; height:100vh;">
+    <div style="display:flex; align-items:center; gap:10px; padding:0 6px;">
+      <div style="width:26px; height:26px; border-radius:8px; background:oklch(0.80 0.14 158); display:flex; align-items:center; justify-content:center;">
+        <div style="width:8px; height:8px; border-radius:2px; background:#0a0b0d;"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; line-height:1.1;">
+        <span style="font-size:13px; font-weight:600; letter-spacing:-0.01em;">Kamel Ride</span>
+        <span style="font-size:10px; color:#7c828c; letter-spacing:.06em; text-transform:uppercase;">Events</span>
+      </div>
+    </div>
+
+    <nav style="display:flex; flex-direction:column; gap:2px;">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:13.5px; cursor:pointer; background:{{ n.bg }}; color:{{ n.fg }}; font-weight:{{ n.weight }};" style-hover="background:rgba(255,255,255,.05);">
+          <div style="width:5px; height:5px; border-radius:50%; background:{{ n.dot }};"></div>
+          <span>{{ n.label }}</span>
+        </div>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+      <div style="border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:12px; background:#101215; display:flex; flex-direction:column; gap:7px;">
+        <div style="display:flex; align-items:center; gap:7px;">
+          <div style="width:6px; height:6px; border-radius:50%; background:oklch(0.80 0.14 158); animation:pulseDot 2s ease-in-out infinite;"></div>
+          <span style="font-size:11px; color:#8a9099; letter-spacing:.04em; text-transform:uppercase;">Up to date</span>
+        </div>
+        <div style="font-size:11.5px; color:#616872; line-height:1.5;">{{ storeCount }} events in the list, gathered from Eventbrite.</div>
+        <div style="font-size:11.5px; color:#616872;">Last checked 4:50 PM.</div>
+      </div>
+      <div style="font-size:10.5px; color:#4d545d; padding:0 4px; line-height:1.5;">The list rebuilds itself each time you collect.</div>
+    </div>
+  </aside>
+
+  <main style="padding:26px 32px 40px; display:flex; flex-direction:column; gap:20px; min-width:0;">
+
+    <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <h1 style="margin:0; font-size:25px; font-weight:600; letter-spacing:-0.02em;">What's on</h1>
+        <div style="display:flex; align-items:center; gap:10px; font-size:12.5px; color:#7c828c;">
+          <span style="position:relative; display:inline-flex; width:7px; height:7px;">
+            <span style="position:absolute; inset:0; border-radius:50%; background:oklch(0.80 0.14 158); animation:ringOut 2s ease-out infinite;"></span>
+            <span style="position:relative; width:7px; height:7px; border-radius:50%; background:oklch(0.80 0.14 158);"></span>
+          </span>
+          <span>{{ storeCount }} real events, across six places</span>
+          <span style="color:#3c424a;">/</span>
+          <span>refreshed a few seconds ago</span>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; border:1px solid rgba(255,255,255,.08); border-radius:9px; background:#101215; padding:6px 8px 6px 12px;">
+          <span style="font-size:11.5px; color:#7c828c;">Look for events in</span>
+          <select onChange="{{ onPlaceChange }}" style="background:#191d21; color:#ffffff; border:1px solid rgba(255,255,255,.09); border-radius:7px; font-family:inherit; font-size:12.5px; font-weight:500; padding:5px 8px; cursor:pointer;">
+            <option value="San Francisco">San Francisco</option>
+            <option value="New York">New York</option>
+            <option value="Chicago">Chicago</option>
+            <option value="Los Angeles">Los Angeles</option>
+            <option value="Austin">Austin</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+        <button onClick="{{ onCollect }}" style="border:0; background:oklch(0.80 0.14 158); color:#08150f; font-family:inherit; font-size:12.5px; font-weight:600; padding:9px 16px; border-radius:9px; cursor:pointer; display:flex; align-items:center; gap:8px;" style-hover="background:oklch(0.86 0.13 158);">
+          <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}">
+            <span style="width:11px; height:11px; border-radius:50%; border:2px solid rgba(8,21,15,.35); border-top-color:#08150f; animation:spin .7s linear infinite;"></span>
+          </sc-if>
+          <span>{{ collectLabel }}</span>
+        </button>
+      </div>
+    </header>
+
+    <sc-if value="{{ status }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid rgba(127,224,176,.22); background:rgba(127,224,176,.07); border-radius:10px; padding:11px 14px; font-size:12.5px; color:oklch(0.86 0.10 158);">{{ status }}</div>
+    </sc-if>
+
+    <section style="display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px;">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
+        <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:16px 18px; display:flex; flex-direction:column; gap:9px; min-width:0;">
+          <span style="font-size:11px; color:#7c828c; letter-spacing:.05em; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ k.label }}</span>
+          <span style="font-size:clamp(20px,1.9vw,29px); font-weight:600; letter-spacing:-0.03em; line-height:1;">{{ k.value }}</span>
+          <span style="font-size:11.5px; color:#5c636c; line-height:1.4;">{{ k.hint }}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display:grid; grid-template-columns:1.62fr 1fr; gap:12px; align-items:stretch;">
+
+      <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:18px 20px 14px; display:flex; flex-direction:column; gap:18px; min-width:0;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">When they're happening</h2>
+            <span style="font-size:11.5px; color:#6b727b;">Events per day, from today onward</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px; font-size:11px; color:#7c828c;">
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:2px; background:oklch(0.80 0.14 158);"></span>on sale</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:2px; background:oklch(0.86 0.13 158);"></span>today</span>
+          </div>
+        </div>
+
+        <div style="position:relative; height:184px; display:flex; align-items:flex-end; gap:4px;">
+          <div style="position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; pointer-events:none;">
+            <div style="border-top:1px solid rgba(255,255,255,.05);"></div>
+            <div style="border-top:1px solid rgba(255,255,255,.05);"></div>
+            <div style="border-top:1px solid rgba(255,255,255,.05);"></div>
+            <div style="border-top:1px solid rgba(255,255,255,.05);"></div>
+          </div>
+          <sc-for list="{{ bars }}" as="b" hint-placeholder-count="30">
+            <div onMouseEnter="{{ b.onEnter }}" onMouseLeave="{{ onLeave }}" style="position:relative; flex:1 1 0; height:100%; display:flex; flex-direction:column; justify-content:flex-end;">
+              <div style="height:{{ b.h }}; min-height:2px; background:{{ b.fill }}; border-radius:3px 3px 0 0; transition:height .35s cubic-bezier(.2,.8,.2,1), background .15s;"></div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ tip }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; top:-4px; left:{{ tip.x }}; transform:translateX(-50%); background:#1b1f24; border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:8px 11px; pointer-events:none; box-shadow:0 8px 24px rgba(0,0,0,.5); white-space:nowrap;">
+              <div style="font-size:11px; color:#8a9099; margin-bottom:3px;">{{ tip.label }}</div>
+              <div style="font-size:14px; font-weight:600;">{{ tip.value }}</div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:#5c636c;">
+          <span>Today</span><span>This weekend</span><span>Next week</span><span>Mid-August</span><span>Late August</span>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:18px 20px; display:flex; flex-direction:column; gap:15px; min-width:0;">
+        <div style="display:flex; flex-direction:column; gap:3px;">
+          <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">What kind of events</h2>
+          <span style="font-size:11.5px; color:#6b727b;">Music is running away with it</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <sc-for list="{{ cats }}" as="c" hint-placeholder-count="7">
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <span style="font-size:12.5px; color:#c6cbd2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.label }}</span>
+                <span style="font-size:11px; color:#7c828c; flex:none; white-space:nowrap; font-variant-numeric:tabular-nums;">{{ c.count }} <span style="color:#4d545d;">·</span> {{ c.pct }}</span>
+              </div>
+              <div style="height:5px; border-radius:3px; background:rgba(255,255,255,.05); overflow:hidden;">
+                <div style="height:100%; width:{{ c.w }}; background:{{ c.color }}; border-radius:3px; transition:width .4s cubic-bezier(.2,.8,.2,1);"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:grid; grid-template-columns:1.62fr 1fr; gap:12px; align-items:start;">
+
+      <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; display:flex; flex-direction:column; min-width:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px 14px; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">Coming up next</h2>
+            <span style="font-size:11.5px; color:#6b727b;">Soonest first · tap any event for tickets</span>
+          </div>
+          <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
+              <button onClick="{{ f.onClick }}" style="border:1px solid {{ f.border }}; background:{{ f.bg }}; color:{{ f.fg }}; font-family:inherit; font-size:11.5px; padding:4px 11px; border-radius:20px; cursor:pointer; white-space:nowrap;">{{ f.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; border-top:1px solid rgba(255,255,255,.06);">
+          <sc-for list="{{ feed }}" as="e" hint-placeholder-count="8">
+            <a href="{{ e.url }}" target="_blank" rel="noreferrer" style="display:flex; align-items:center; gap:13px; padding:12px 20px; border-bottom:1px solid rgba(255,255,255,.04); color:inherit; text-decoration:none;" style-hover="background:rgba(255,255,255,.03);">
+              <sc-if value="{{ showImages }}" hint-placeholder-val="{{ true }}">
+                <div style="width:46px; height:46px; border-radius:9px; background:{{ e.tint }}; flex:none; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center;">
+                  <span style="font-size:17px; font-weight:600; color:{{ e.color }};">{{ e.initial }}</span>
+                  <img src="{{ e.img }}" alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError="{{ onImgError }}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;" />
+                </div>
+              </sc-if>
+              <div style="display:flex; flex-direction:column; gap:4px; min-width:0; flex:1;">
+                <span style="font-size:13.5px; font-weight:500; color:#eef0f3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ e.name }}</span>
+                <div style="display:flex; align-items:center; gap:7px; min-width:0;">
+                  <span style="display:flex; align-items:center; gap:6px; flex:none;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:{{ e.color }};"></span>
+                    <span style="font-size:11.5px; color:#8a9099; white-space:nowrap;">{{ e.cat }}</span>
+                  </span>
+                  <span style="color:#3c424a; font-size:11px;">·</span>
+                  <span style="font-size:11.5px; color:#6b727b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ e.place }}</span>
+                </div>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:none;">
+                <span style="font-size:12px; font-weight:500; color:{{ e.dayColor }}; white-space:nowrap;">{{ e.day }}</span>
+                <span style="font-size:11.5px; color:#616872; white-space:nowrap;">{{ e.time }}</span>
+              </div>
+            </a>
+          </sc-for>
+        </div>
+        <div style="padding:12px 20px; font-size:11.5px; color:#5c636c;">{{ feedFooter }}</div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:18px 20px; display:flex; flex-direction:column; gap:15px;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">Where they are</h2>
+            <span style="font-size:11.5px; color:#6b727b;">One in four happens online</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <sc-for list="{{ cities }}" as="c" hint-placeholder-count="6">
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                  <span style="font-size:12.5px; color:#c6cbd2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.label }}</span>
+                  <span style="font-size:11px; color:#7c828c; flex:none; font-variant-numeric:tabular-nums;">{{ c.count }}</span>
+                </div>
+                <div style="height:5px; border-radius:3px; background:rgba(255,255,255,.05); overflow:hidden;">
+                  <div style="height:100%; width:{{ c.w }}; background:{{ c.color }}; border-radius:3px; transition:width .4s cubic-bezier(.2,.8,.2,1);"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:18px 20px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">How people gather</h2>
+            <span style="font-size:11.5px; color:#6b727b;">Parties, talks and shows lead</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <sc-for list="{{ formats }}" as="f" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04);">
+                <span style="font-size:12.5px; color:#c6cbd2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ f.label }}</span>
+                <span style="font-size:12px; color:#8a9099; flex:none; font-variant-numeric:tabular-nums;">{{ f.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border-radius:10px; background:rgba(127,224,176,.07); border:1px solid rgba(127,224,176,.18); padding:12px 14px; display:flex; flex-direction:column; gap:5px;">
+            <span style="font-size:12.5px; font-weight:600; color:oklch(0.86 0.10 158);">Busiest night</span>
+            <span style="font-size:11.5px; color:#8a9099; line-height:1.5;">Saturday August 1st — 20 events, mostly parties in Chicago and Brooklyn.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showImages&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;defaultCity&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;all&quot;,&quot;San Francisco&quot;,&quot;New York&quot;,&quot;Brooklyn&quot;,&quot;Chicago&quot;,&quot;Online&quot;],&quot;default&quot;:&quot;all&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+const MINT = 'oklch(0.80 0.14 158)';
+const MINT_HI = 'oklch(0.86 0.13 158)';
+const CAT_COLORS = {
+  'Music': 'oklch(0.80 0.14 158)',
+  'Community & Culture': 'oklch(0.78 0.14 235)',
+  'Business & Professional': 'oklch(0.82 0.14 92)',
+  'Food & Drink': 'oklch(0.76 0.14 305)',
+  'Health & Wellness': 'oklch(0.78 0.14 200)',
+  'Charity & Causes': 'oklch(0.78 0.14 25)',
+  'Performing & Visual Arts': 'oklch(0.76 0.14 265)',
+  'Auto, Boat & Air': 'oklch(0.78 0.14 200)',
+  'Film, Media & Entertainment': 'oklch(0.76 0.14 265)',
+  'Family & Education': 'oklch(0.82 0.14 92)',
+  'Religion & Spirituality': 'oklch(0.76 0.14 305)',
+  'Sports & Fitness': 'oklch(0.78 0.14 25)',
+  'Other': 'oklch(0.68 0.02 250)'
+};
+const FRIENDLY_CAT = {
+  'Community & Culture': 'Community',
+  'Business & Professional': 'Business',
+  'Performing & Visual Arts': 'Arts & theatre',
+  'Film, Media & Entertainment': 'Film & media',
+  'Auto, Boat & Air': 'On the water',
+  'Religion & Spirituality': 'Faith',
+  'Family & Education': 'Family',
+  'Sports & Fitness': 'Sport',
+  'Other': 'Something else'
+};
+const CATS = [
+  ['Music', 59], ['Community & Culture', 17], ['Business & Professional', 16],
+  ['Food & Drink', 11], ['Health & Wellness', 11], ['Charity & Causes', 9],
+  ['Performing & Visual Arts', 8]
+];
+const CITIES = [
+  ['San Francisco', 40, MINT], ['Online', 40, 'oklch(0.78 0.14 235)'], ['Chicago', 38, 'oklch(0.82 0.14 92)'],
+  ['New York', 18, 'oklch(0.76 0.14 305)'], ['Brooklyn', 18, 'oklch(0.78 0.14 200)'], ['Queens', 4, 'oklch(0.68 0.02 250)']
+];
+const FORMATS = [
+  ['Parties & socials', 49], ['Talks & seminars', 29], ['Concerts & shows', 28],
+  ['Classes & workshops', 15], ['Festivals & fairs', 15]
+];
+const DAYS = [
+  ['2026-07-26', 18], ['2026-07-27', 6], ['2026-07-28', 11], ['2026-07-29', 10], ['2026-07-30', 9],
+  ['2026-07-31', 16], ['2026-08-01', 20], ['2026-08-02', 10], ['2026-08-03', 3], ['2026-08-04', 3],
+  ['2026-08-05', 2], ['2026-08-06', 2], ['2026-08-07', 5], ['2026-08-08', 8], ['2026-08-09', 4],
+  ['2026-08-10', 1], ['2026-08-11', 1], ['2026-08-12', 1], ['2026-08-13', 1], ['2026-08-14', 2],
+  ['2026-08-15', 7], ['2026-08-16', 2], ['2026-08-17', 2], ['2026-08-18', 0], ['2026-08-19', 1],
+  ['2026-08-20', 2], ['2026-08-21', 1], ['2026-08-22', 3], ['2026-08-23', 1], ['2026-08-24', 0]
+];
+const EVENTS = [
+  { name: "daddy ray's annual Dore Alley leather brunch", cat: 'Food & Drink', city: 'San Francisco', venue: 'SF Eagle Bar', date: '2026-07-26', time: '10:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1185780746%2F540440656083%2F1%2Foriginal.png?w=512&auto=format%2Ccompress&q=75&sharp=10&rect=0%2C0%2C940%2C470&s=c20f2e65250bfbc1c4c71a2aabf59362' },
+  { name: 'The Trashy Summer Market', cat: 'Community & Culture', city: 'Chicago', venue: 'Hairpin Arts Center', date: '2026-07-26', time: '10:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1187066737%2F516052511785%2F1%2Foriginal.20260616-213954?crop=focalpoint&fit=crop&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=90ec121ea1d57b972a98198891f4731d' },
+  { name: 'Jouvert Madness 2026', cat: 'Community & Culture', city: 'Brooklyn', venue: '333 Stanley Ave', date: '2026-07-26', time: '12:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1189608204%2F95418700891%2F1%2Foriginal.20260725-160503?crop=focalpoint&fit=crop&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.526&fp-y=0.235&s=92ef22d93018775166573872c4b12360' },
+  { name: 'BLISS Caribbean Rooftop Day Party: Pinknic Edition', cat: 'Music', city: 'Chicago', venue: 'Azul', date: '2026-07-26', time: '12:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1186798260%2F201275147105%2F1%2Foriginal.20260612-230944?crop=focalpoint&fit=crop&h=200&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.446&fp-y=0.04&s=10a70165b40ac26eb79c30712481de28' },
+  { name: 'Urban Ritmo Boat Party · 21+ · Live DJ', cat: 'Auto, Boat & Air', city: 'Chicago', venue: 'Monroe Harbor', date: '2026-07-26', time: '13:30', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1187141438%2F325004143503%2F1%2Foriginal.20260617-202741?crop=focalpoint&fit=crop&h=200&auto=format%2Ccompress&q=75&sharp=10&fp-x=1.0&fp-y=0.424&s=3de84fde3203003e09f7b4f40ac47fa0' },
+  { name: 'BROWN SUGA: A Neo-Soul and R&B Experience', cat: 'Music', city: 'San Francisco', venue: 'ERIA Marina', date: '2026-07-26', time: '15:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1189259585%2F2506834735111%2F1%2Foriginal.20260720-222009?crop=focalpoint&fit=crop&w=512&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=1fb3a061482915d8a106296b3f3aeffa' },
+  { name: '2000s and Better · Throwback Day Party', cat: 'Music', city: 'New York', venue: 'The DL', date: '2026-07-26', time: '15:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1188518153%2F238086577899%2F1%2Foriginal.20260709-071159?crop=focalpoint&fit=crop&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=afad27e194f2f382bcbc21d7d2d3e637' },
+  { name: 'Ballet22: Summer Season 2026', cat: 'Performing & Visual Arts', city: 'San Francisco', venue: 'Cowell Theater, Pier 2', date: '2026-07-26', time: '16:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1180711952%2F307833171226%2F1%2Foriginal.20260325-232050?crop=focalpoint&fit=crop&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.469&fp-y=0.232&s=b47f3aed5984bf7da0e35599e153a769' },
+  { name: 'Networking Mixer · Private Equity, VC & Fintech', cat: 'Business & Professional', city: 'New York', venue: 'La Brochette Steakhouse', date: '2026-07-27', time: '18:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1187404272%2F224965426305%2F1%2Foriginal.20260622-154118?crop=focalpoint&fit=crop&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=98953b3ee809836dd15a08d4f20195b7' },
+  { name: 'The Psychology of Reiki', cat: 'Health & Wellness', city: 'Online', venue: 'Online event', date: '2026-07-27', time: '18:30', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1187187991%2F1941367747473%2F1%2Foriginal.20260618-115210?w=400&auto=format%2Ccompress&q=75&sharp=10&s=998e69e1bd15d7e14620e80e2bd48c06' },
+  { name: 'Midnight Release Party for DAGGERMOUTH', cat: 'Film, Media & Entertainment', city: 'New York', venue: 'Barnes & Noble, Union Sq', date: '2026-07-27', time: '21:30', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1184030430%2F825115679133%2F1%2Foriginal.20260507-154727?crop=focalpoint&fit=crop&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=4234523c1a4306b9efce14326c175a56' },
+  { name: 'JumpStart Virtual Conference 2026', cat: 'Family & Education', city: 'Online', venue: 'Online event', date: '2026-07-28', time: '09:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1189504317%2F1353002177993%2F1%2Foriginal.20260723-204708?crop=focalpoint&fit=crop&w=365&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=4b07da21ef08852a8a923b347c22ccb3' },
+  { name: 'Prayer Shut-In: Until Something Breaks', cat: 'Religion & Spirituality', city: 'Brooklyn', venue: '1250 St Johns Pl', date: '2026-07-31', time: '21:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1186205536%2F2583611708001%2F1%2Foriginal.20260605-002028?crop=focalpoint&fit=crop&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=3c4fc012030a362532e30c04b9c6313c' },
+  { name: 'LIC Wellness Fest · Free fitness festival', cat: 'Health & Wellness', city: 'Queens', venue: '27-25 44th Dr', date: '2026-08-01', time: '10:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1187137430%2F241487903673%2F1%2Foriginal.20260617-194403?w=362&auto=format%2Ccompress&q=75&sharp=10&s=3eb6fce8f4d0f1e585388d7894a3a6f4' },
+  { name: 'Corrida del Mariachi 5k Run', cat: 'Sports & Fitness', city: 'Chicago', venue: 'North Berwyn Park District', date: '2026-08-15', time: '08:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1181453441%2F258600343068%2F1%2Foriginal.20260405-044142?crop=focalpoint&fit=crop&h=200&w=512&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.5&fp-y=0.5&s=c282328ae7d489e9139329eab16a95b4' },
+  { name: '19th Annual Oak Park Microbrew Review', cat: 'Food & Drink', city: 'Chicago', venue: 'Downtown Oak Park', date: '2026-08-22', time: '14:00', img: 'https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1180573009%2F209719983036%2F1%2Foriginal.20260324-153801?crop=focalpoint&fit=crop&h=200&w=400&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.019&fp-y=0.645&s=1e2122b69bc659485a74a76e4f39245f' }
+];
+const TODAY = '2026-07-26';
+const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+class Component extends DCLogic {
+  state = { filter: null, hover: null, busy: false, status: null, extra: 0 };
+
+  d(iso) { const [y, m, dd] = iso.split('-').map(Number); return new Date(y, m - 1, dd); }
+
+  dayLabel(iso) {
+    if (iso === TODAY) return 'Today';
+    const t = this.d(TODAY), x = this.d(iso);
+    const diff = Math.round((x - t) / 86400000);
+    if (diff === 1) return 'Tomorrow';
+    if (diff < 7) return WD[x.getDay()];
+    return WD[x.getDay()] + ' ' + MO[x.getMonth()] + ' ' + x.getDate();
+  }
+
+  clock(hm) {
+    const [h, m] = hm.split(':').map(Number);
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const hh = h % 12 === 0 ? 12 : h % 12;
+    return hh + (m ? ':' + String(m).padStart(2, '0') : '') + ' ' + ampm;
+  }
+
+  collect = () => {
+    if (this.state.busy) return;
+    this.setState({ busy: true, status: 'Looking for new events in ' + (this.place || 'San Francisco') + '…' });
+    setTimeout(() => {
+      const added = 12;
+      this.setState(s => ({
+        busy: false, extra: s.extra + added,
+        status: 'Found ' + added + ' events we didn\u2019t have yet — ' + (160 + s.extra + added) + ' in the list now.'
+      }));
+    }, 1400);
+  };
+
+  renderVals() {
+    const total = 160 + this.state.extra;
+    const hover = this.state.hover;
+    const filter = this.state.filter || this.props.defaultCity || 'all';
+    const showImages = this.props.showImages ?? true;
+    const maxDay = Math.max(...DAYS.map(d => d[1]));
+
+    const bars = DAYS.map(([iso, n], i) => ({
+      h: (n / maxDay * 100).toFixed(1) + '%',
+      fill: hover === i ? '#ffffff' : (iso === TODAY ? MINT_HI : MINT),
+      onEnter: () => this.setState({ hover: i })
+    }));
+
+    const tip = hover == null ? false : {
+      x: ((hover + 0.5) / DAYS.length * 100).toFixed(2) + '%',
+      label: this.dayLabel(DAYS[hover][0]),
+      value: DAYS[hover][1] === 0 ? 'Nothing on' : DAYS[hover][1] === 1 ? '1 event' : DAYS[hover][1] + ' events'
+    };
+
+    const catMax = CATS[0][1];
+    const cats = CATS.map(([label, count]) => ({
+      label: FRIENDLY_CAT[label] || label,
+      count, pct: Math.round(count / 160 * 100) + '%',
+      w: (count / catMax * 100).toFixed(0) + '%',
+      color: CAT_COLORS[label] || MINT
+    }));
+
+    const cityMax = CITIES[0][1];
+    const cities = CITIES.map(([label, count, color]) => ({
+      label, count, color, w: (count / cityMax * 100).toFixed(0) + '%'
+    }));
+
+    const rows = EVENTS.filter(e => filter === 'all' || e.city === filter).slice(0, 9).map(e => ({
+      name: e.name,
+      cat: FRIENDLY_CAT[e.cat] || e.cat,
+      color: CAT_COLORS[e.cat] || MINT,
+      place: e.city === 'Online' ? 'Online' : e.venue + ', ' + e.city,
+      day: this.dayLabel(e.date),
+      dayColor: e.date === TODAY ? MINT_HI : '#c6cbd2',
+      time: this.clock(e.time),
+      img: e.img,
+      initial: e.name.replace(/[^A-Za-z0-9]/g, '').charAt(0).toUpperCase() || '·',
+      tint: 'color-mix(in oklab, ' + (CAT_COLORS[e.cat] || MINT) + ' 16%, #1b1f24)',
+      url: 'https://www.eventbrite.com/'
+    }));
+
+    const chip = (id, label) => ({
+      label,
+      onClick: () => this.setState({ filter: id }),
+      bg: filter === id ? 'rgba(127,224,176,.12)' : 'transparent',
+      fg: filter === id ? MINT : '#7c828c',
+      border: filter === id ? 'rgba(127,224,176,.35)' : 'rgba(255,255,255,.09)'
+    });
+
+    const navItem = (label, active) => ({
+      label, bg: active ? 'rgba(255,255,255,.06)' : 'transparent',
+      fg: active ? '#ffffff' : '#8a9099', weight: active ? 600 : 400,
+      dot: active ? MINT : 'rgba(255,255,255,.18)'
+    });
+
+    return {
+      nav: [navItem('Overview', true), navItem('All events', false), navItem('Cities', false), navItem('Categories', false), navItem('Collect', false)],
+      storeCount: total.toLocaleString('en-US'),
+      kpis: [
+        { label: 'Events', value: total.toLocaleString('en-US'), hint: 'collected from Eventbrite' },
+        { label: 'On today', value: '18', hint: 'starting in the next few hours' },
+        { label: 'Places', value: '6', hint: 'cities, plus online' },
+        { label: 'Kinds', value: '19', hint: 'music through to faith' },
+        { label: 'Online', value: '25%', hint: 'join from anywhere' }
+      ],
+      bars, tip, cats, cities, showImages,
+      formats: FORMATS.map(([label, count]) => ({ label, count })),
+      filters: [chip('all', 'Everywhere'), chip('San Francisco', 'San Francisco'), chip('New York', 'New York'), chip('Brooklyn', 'Brooklyn'), chip('Chicago', 'Chicago'), chip('Online', 'Online')],
+      feed: rows,
+      feedFooter: rows.length ? 'Showing the next ' + rows.length + ' of ' + total.toLocaleString('en-US') + ' events' : 'Nothing here yet — try collecting events for this place.',
+      busy: this.state.busy,
+      collectLabel: this.state.busy ? 'Collecting…' : 'Collect events',
+      status: this.state.status,
+      onCollect: this.collect,
+      onPlaceChange: (e) => { this.place = e.target.value; },
+      onImgError: (ev) => { ev.currentTarget.style.display = 'none'; },
+      onLeave: () => this.setState({ hover: null })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

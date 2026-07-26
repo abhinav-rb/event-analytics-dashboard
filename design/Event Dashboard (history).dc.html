@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin:0; padding:0; background:#0a0b0d; }
+  * { box-sizing: border-box; }
+  a { color:#7fe0b0; text-decoration:none; }
+  a:hover { color:#a6ecc9; }
+  ::selection { background:#7fe0b0; color:#0a0b0d; }
+  @keyframes pulseDot { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.35; transform:scale(.8); } }
+  @keyframes ringOut { 0% { transform:scale(.6); opacity:.7; } 100% { transform:scale(2.4); opacity:0; } }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#0a0b0d; color:#e9eaee; font-family:'Instrument Sans', Helvetica, sans-serif; display:grid; grid-template-columns:224px 1fr;">
+
+  <aside style="border-right:1px solid rgba(255,255,255,.07); padding:22px 16px; display:flex; flex-direction:column; gap:28px; position:sticky; top:0; height:100vh;">
+    <div style="display:flex; align-items:center; gap:10px; padding:0 6px;">
+      <div style="width:26px; height:26px; border-radius:8px; background:oklch(0.80 0.14 158); display:flex; align-items:center; justify-content:center;">
+        <div style="width:8px; height:8px; border-radius:2px; background:#0a0b0d;"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; line-height:1.1;">
+        <span style="font-size:13px; font-weight:600; letter-spacing:-0.01em;">Kamel Ride</span>
+        <span style="font-size:10px; color:#7c828c; letter-spacing:.06em; text-transform:uppercase;">Analytics</span>
+      </div>
+    </div>
+
+    <nav style="display:flex; flex-direction:column; gap:2px;">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:13.5px; cursor:pointer; background:{{ n.bg }}; color:{{ n.fg }}; font-weight:{{ n.weight }};" style-hover="background:rgba(255,255,255,.05);">
+          <div style="width:5px; height:5px; border-radius:50%; background:{{ n.dot }};"></div>
+          <span>{{ n.label }}</span>
+        </div>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+      <div style="border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:12px; background:#101215;">
+        <div style="display:flex; align-items:center; gap:7px; margin-bottom:8px;">
+          <div style="width:6px; height:6px; border-radius:50%; background:oklch(0.80 0.14 158); animation:pulseDot 2s ease-in-out infinite;"></div>
+          <span style="font-size:11px; color:#8a9099; letter-spacing:.04em; text-transform:uppercase;">All systems normal</span>
+        </div>
+        <div style="font-size:11.5px; color:#616872; line-height:1.6;">Counting activity since 4:12 this morning.</div>
+      </div>
+      <div style="font-size:10.5px; color:#4d545d; padding:0 4px; line-height:1.5;">Numbers update on their own — no need to refresh.</div>
+    </div>
+  </aside>
+
+  <main style="padding:26px 32px 40px; display:flex; flex-direction:column; gap:20px; min-width:0;">
+
+    <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <h1 style="margin:0; font-size:25px; font-weight:600; letter-spacing:-0.02em;">Overview</h1>
+        <div style="display:flex; align-items:center; gap:10px; font-size:12.5px; color:#7c828c;">
+          <span style="position:relative; display:inline-flex; width:7px; height:7px;">
+            <span style="position:absolute; inset:0; border-radius:50%; background:oklch(0.80 0.14 158); animation:ringOut 2s ease-out infinite;"></span>
+            <span style="position:relative; width:7px; height:7px; border-radius:50%; background:oklch(0.80 0.14 158);"></span>
+          </span>
+          <span>Live</span>
+          <span style="color:#3c424a;">/</span>
+          <span>updated {{ updatedAgo }}</span>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; gap:2px; padding:3px; border:1px solid rgba(255,255,255,.08); border-radius:9px; background:#101215;">
+          <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="3">
+            <button onClick="{{ r.onClick }}" style="border:0; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:500; padding:6px 13px; border-radius:7px; background:{{ r.bg }}; color:{{ r.fg }};">{{ r.label }}</button>
+          </sc-for>
+        </div>
+        <button style="border:1px solid rgba(255,255,255,.08); background:#101215; color:#c6cbd2; font-family:inherit; font-size:12.5px; font-weight:500; padding:8px 14px; border-radius:9px; cursor:pointer;" style-hover="background:#171a1e; color:#fff;">Export</button>
+      </div>
+    </header>
+
+    <section style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px;">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+        <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:16px 18px; display:flex; flex-direction:column; gap:10px; min-width:0;">
+          <span style="font-size:11px; color:#7c828c; letter-spacing:.05em; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ k.label }}</span>
+          <div style="display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; min-width:0;">
+            <span style="font-size:clamp(21px,2.1vw,30px); font-weight:600; letter-spacing:-0.03em; line-height:1;">{{ k.value }}</span>
+            <span style="font-size:12px; font-weight:500; color:{{ k.deltaColor }}; flex:none;">{{ k.delta }}</span>
+          </div>
+          <span style="font-size:11.5px; color:#5c636c; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ k.hint }}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display:grid; grid-template-columns:1.62fr 1fr; gap:12px; align-items:stretch;">
+
+      <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:18px 20px 14px; display:flex; flex-direction:column; gap:18px; min-width:0;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">How busy it's been</h2>
+            <span style="font-size:11.5px; color:#6b727b;">{{ chartSubtitle }}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px; font-size:11px; color:#7c828c;">
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:2px; background:oklch(0.80 0.14 158);"></span>activity</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:2px; background:oklch(0.72 0.12 158);"></span>right now</span>
+          </div>
+        </div>
+
+        <div style="position:relative; height:190px; display:flex; align-items:flex-end; gap:3px;">
+          <div style="position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; pointer-events:none;">
+            <div style="border-top:1px solid rgba(255,255,255,.05);"></div>
+            <div style="border-top:1px solid rgba(255,255,255,.05);"></div>
+            <div style="border-top:1px solid rgba(255,255,255,.05);"></div>
+            <div style="border-top:1px solid rgba(255,255,255,.05);"></div>
+          </div>
+          <sc-for list="{{ bars }}" as="b" hint-placeholder-count="24">
+            <div onMouseEnter="{{ b.onEnter }}" onMouseLeave="{{ onLeave }}" style="position:relative; flex:1 1 0; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch; cursor:default;">
+              <div style="height:{{ b.h }}; background:{{ b.fill }}; border-radius:3px 3px 0 0; transition:height .35s cubic-bezier(.2,.8,.2,1), background .15s;"></div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ tip }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; top:-6px; left:{{ tip.x }}; transform:translateX(-50%); background:#1b1f24; border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:8px 11px; pointer-events:none; box-shadow:0 8px 24px rgba(0,0,0,.5); white-space:nowrap;">
+              <div style="font-size:11px; color:#8a9099; margin-bottom:3px;">{{ tip.label }}</div>
+              <div style="font-size:14px; font-weight:600;">{{ tip.value }} things happened</div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:10.5px; color:#5c636c;">
+          <sc-for list="{{ axis }}" as="a" hint-placeholder-count="5">
+            <span style="font-family:'Instrument Sans', Helvetica, sans-serif; font-size:11px;">{{ a.label }}</span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:18px 20px; display:flex; flex-direction:column; gap:16px; min-width:0;">
+        <div style="display:flex; flex-direction:column; gap:3px;">
+          <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">What people are doing</h2>
+          <span style="font-size:11.5px; color:#6b727b;">Share of everything that happened</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:13px;">
+          <sc-for list="{{ types }}" as="t" hint-placeholder-count="6">
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <span style="font-size:12.5px; color:#c6cbd2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ t.name }}</span>
+                <span style="font-size:11px; color:#7c828c; font-variant-numeric:tabular-nums; flex:none; white-space:nowrap;">{{ t.count }} <span style="color:#4d545d;">·</span> {{ t.pct }}</span>
+              </div>
+              <div style="height:5px; border-radius:3px; background:rgba(255,255,255,.05); overflow:hidden;">
+                <div style="height:100%; width:{{ t.w }}; background:{{ t.color }}; border-radius:3px; transition:width .4s cubic-bezier(.2,.8,.2,1);"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:grid; grid-template-columns:1.62fr 1fr; gap:12px; align-items:start;">
+
+      <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; display:flex; flex-direction:column; min-width:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px 14px;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">Happening right now</h2>
+            <span style="font-size:11.5px; color:#6b727b;">The latest few moments, newest first</span>
+          </div>
+          <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+              <button onClick="{{ f.onClick }}" style="border:1px solid {{ f.border }}; background:{{ f.bg }}; color:{{ f.fg }}; font-family:inherit; font-size:11.5px; padding:4px 11px; border-radius:20px; cursor:pointer;">{{ f.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:minmax(140px,1.9fr) minmax(72px,.9fr) minmax(0,1.2fr) auto; gap:12px; padding:9px 20px; border-top:1px solid rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.06); font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:#5c636c;">
+          <span>What happened</span><span>Who</span><span>Details</span><span style="text-align:right;">When</span>
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <sc-for list="{{ feed }}" as="e" hint-placeholder-count="7">
+            <div style="display:grid; grid-template-columns:minmax(140px,1.9fr) minmax(72px,.9fr) minmax(0,1.2fr) auto; gap:12px; align-items:center; padding:11px 20px; border-bottom:1px solid rgba(255,255,255,.04);" style-hover="background:rgba(255,255,255,.025);">
+              <span style="display:flex; align-items:center; gap:8px; font-size:13px; color:#dfe3e8; min-width:0;">
+                <span style="width:7px; height:7px; border-radius:50%; background:{{ e.color }}; flex:none;"></span>
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ e.type }}</span>
+              </span>
+              <span style="font-size:12.5px; color:#8a9099; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ e.user }}</span>
+              <span style="display:flex; gap:5px; flex-wrap:wrap;">
+                <sc-for list="{{ e.props }}" as="p" hint-placeholder-count="2">
+                  <span style="font-size:11.5px; color:#8a9099; background:rgba(255,255,255,.05); border-radius:20px; padding:2px 9px; white-space:nowrap;">{{ p }}</span>
+                </sc-for>
+              </span>
+              <span style="font-size:11.5px; color:#616872; text-align:right; white-space:nowrap;">{{ e.time }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:12px 20px; font-size:11.5px; color:#5c636c;">Showing the last {{ feedCount }} · new ones appear on their own</div>
+      </div>
+
+      <sc-if value="{{ showSources }}" hint-placeholder-val="{{ true }}">
+        <div style="border:1px solid rgba(255,255,255,.07); border-radius:12px; background:#101215; padding:18px 20px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <h2 style="margin:0; font-size:14.5px; font-weight:600; letter-spacing:-0.01em;">Where it's coming from</h2>
+            <span style="font-size:11.5px; color:#6b727b;">Three places activity shows up</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <sc-for list="{{ sources }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex; gap:12px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.05);">
+                <div style="width:7px; height:7px; border-radius:50%; background:{{ s.color }}; margin-top:5px; flex:none;"></div>
+                <div style="display:flex; flex-direction:column; gap:4px; min-width:0; flex:1;">
+                  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+                    <span style="font-size:13px; font-weight:500;">{{ s.name }}</span>
+                    <span style="font-size:12px; color:#8a9099; white-space:nowrap;">{{ s.count }}</span>
+                  </div>
+                  <span style="font-size:11px; color:#616872;">{{ s.path }}</span>
+                  <span style="font-size:11.5px; color:#6b727b; line-height:1.45;">{{ s.desc }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border-radius:10px; background:rgba(127,224,176,.07); border:1px solid rgba(127,224,176,.18); padding:12px 14px; display:flex; flex-direction:column; gap:5px;">
+            <span style="font-size:12.5px; font-weight:600; color:oklch(0.86 0.10 158);">Busiest hour today</span>
+            <span style="font-size:11.5px; color:#8a9099; line-height:1.5;">6–7pm, with 1,104 rides requested — mostly in Cairo.</span>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;range&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;24h&quot;,&quot;7d&quot;,&quot;30d&quot;],&quot;default&quot;:&quot;24h&quot;,&quot;tsType&quot;:&quot;'24h'|'7d'|'30d'&quot;,&quot;section&quot;:&quot;Data&quot;},&quot;showSources&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+const MINT = 'oklch(0.80 0.14 158)';
+const MINT_DIM = 'oklch(0.72 0.12 158)';
+const TYPE_COLORS = {
+  ride_requested: 'oklch(0.80 0.14 158)',
+  driver_assigned: 'oklch(0.78 0.14 235)',
+  ride_completed: 'oklch(0.82 0.14 92)',
+  payment_completed: 'oklch(0.76 0.14 305)',
+  page_view: 'oklch(0.68 0.02 250)',
+  button_click: 'oklch(0.58 0.02 250)'
+};
+const NAMES = {
+  ride_requested: 'Ride requested',
+  driver_assigned: 'Driver matched',
+  ride_completed: 'Ride finished',
+  payment_completed: 'Payment received',
+  page_view: 'Opened the app',
+  button_click: 'Tapped a button'
+};
+const SHARES = [
+  ['ride_requested', 0.28], ['driver_assigned', 0.24], ['ride_completed', 0.18],
+  ['payment_completed', 0.15], ['page_view', 0.09], ['button_click', 0.06]
+];
+const FEED = [
+  ['ride_requested', 'Nour A.', ['Cairo', 'iPhone'], 'just now'],
+  ['driver_assigned', 'Nour A.', ['4 min away', 'Karim H.'], '6 sec ago'],
+  ['payment_completed', 'Omar S.', ['84 EGP', 'Card'], '11 sec ago'],
+  ['ride_completed', 'Omar S.', ['Giza', '5 stars'], '18 sec ago'],
+  ['page_view', 'Layla M.', ['Home screen'], '24 sec ago'],
+  ['ride_requested', 'Youssef T.', ['Alexandria', 'Android'], '31 sec ago'],
+  ['button_click', 'Layla M.', ['Share trip'], '40 sec ago'],
+  ['driver_assigned', 'Youssef T.', ['7 min away', 'Mona R.'], '48 sec ago']
+];
+
+class Component extends DCLogic {
+  state = { range: null, filter: 'all', hover: null };
+
+  get range() { return this.state.range || this.props.range || '24h'; }
+
+  series() {
+    const r = this.range;
+    const n = r === '24h' ? 24 : r === '7d' ? 28 : 30;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const t = i / n;
+      const wave = 0.55 + 0.45 * Math.sin(t * Math.PI * (r === '24h' ? 2 : 3) - 1.2);
+      const noise = (Math.sin(i * 12.9898 + (r === '24h' ? 1 : r === '7d' ? 7 : 30)) * 43758.5453) % 1;
+      const v = wave * (0.82 + Math.abs(noise) * 0.36);
+      out.push(Math.max(0.08, v));
+    }
+    return out;
+  }
+
+  labels() {
+    const r = this.range;
+    if (r === '24h') return ['Midnight', '6am', 'Noon', '6pm', 'Now'];
+    if (r === '7d') return ['Monday', 'Tuesday', 'Thursday', 'Saturday', 'Now'];
+    return ['4 weeks ago', '3 weeks', '2 weeks', 'Last week', 'Now'];
+  }
+
+  totals() {
+    const r = this.range;
+    if (r === '24h') return { events: 12847, users: 2318, rate: '41.2/min', perUser: '5.5' };
+    if (r === '7d') return { events: 86402, users: 9174, rate: '38.6/min', perUser: '9.4' };
+    return { events: 341908, users: 21460, rate: '36.1/min', perUser: '15.9' };
+  }
+
+  fmt(n) { return n.toLocaleString('en-US'); }
+
+  renderVals() {
+    const s = this.series();
+    const max = Math.max(...s);
+    const hover = this.state.hover;
+    const t = this.totals();
+    const labels = this.labels();
+    const filter = this.state.filter;
+
+    const bars = s.map((v, i) => ({
+      h: (v / max * 100).toFixed(1) + '%',
+      prevH: (v / max * 100 * (0.62 + Math.abs(Math.sin(i * 3.7)) * 0.22)).toFixed(1) + '%',
+      fill: hover === i ? '#ffffff' : (i === s.length - 1 ? MINT_DIM : MINT),
+      onEnter: () => this.setState({ hover: i })
+    }));
+
+    const hourLabel = (i) => {
+      if (this.range === '24h') return String(i).padStart(2, '0') + ':00';
+      if (this.range === '7d') return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][Math.floor(i / 4)] + ' ' + ['morning', 'midday', 'evening', 'night'][i % 4];
+      return 'July ' + (i + 1);
+    };
+
+    const tip = hover == null ? false : {
+      x: ((hover + 0.5) / s.length * 100).toFixed(2) + '%',
+      label: hourLabel(hover),
+      value: this.fmt(Math.round(s[hover] / s.reduce((a, b) => a + b, 0) * t.events))
+    };
+
+    const types = SHARES.map(([name, share]) => ({
+      name: NAMES[name], color: TYPE_COLORS[name],
+      count: this.fmt(Math.round(t.events * share)),
+      pct: (share * 100).toFixed(0) + '%',
+      w: (share / SHARES[0][1] * 100).toFixed(0) + '%'
+    }));
+
+    const feedRows = FEED.filter(f => filter === 'all' || f[0] === filter).map(f => ({
+      type: NAMES[f[0]], user: f[1], props: f[2], time: f[3], color: TYPE_COLORS[f[0]]
+    }));
+
+    const chip = (id, label) => ({
+      label,
+      onClick: () => this.setState({ filter: id }),
+      bg: filter === id ? 'rgba(127,224,176,.12)' : 'transparent',
+      fg: filter === id ? MINT : '#7c828c',
+      border: filter === id ? 'rgba(127,224,176,.35)' : 'rgba(255,255,255,.09)'
+    });
+
+    const navItem = (label, active) => ({
+      label, bg: active ? 'rgba(255,255,255,.06)' : 'transparent',
+      fg: active ? '#ffffff' : '#8a9099', weight: active ? 600 : 400,
+      dot: active ? MINT : 'rgba(255,255,255,.18)'
+    });
+
+    return {
+      nav: [navItem('Overview', true), navItem('Activity', false), navItem('People', false), navItem('Where it comes from', false), navItem('Settings', false)],
+      ranges: [['24h', 'Today'], ['7d', 'This week'], ['30d', 'This month']].map(([id, label]) => ({
+        label,
+        onClick: () => this.setState({ range: id, hover: null }),
+        bg: this.range === id ? '#22262b' : 'transparent',
+        fg: this.range === id ? '#ffffff' : '#7c828c'
+      })),
+      updatedAgo: 'a few seconds ago',
+      chartSubtitle: this.range === '24h' ? 'Hour by hour, since midnight' : this.range === '7d' ? 'Across the past week' : 'Day by day, past month',
+      kpis: [
+        { label: 'Things that happened', value: this.fmt(t.events), delta: '+12.4%', deltaColor: MINT, hint: 'vs. the period before' },
+        { label: 'People using the app', value: this.fmt(t.users), delta: '+8.1%', deltaColor: MINT, hint: 'each person counted once' },
+        { label: 'Actions per person', value: t.perUser, delta: '+3.9%', deltaColor: MINT, hint: 'how busy an average rider is' },
+        { label: 'Happening right now', value: t.rate, delta: '−1.2%', deltaColor: '#e0a06a', hint: 'a little quieter than usual' }
+      ],
+      bars, tip,
+      axis: labels.map(l => ({ label: l })),
+      types,
+      filters: [chip('all', 'Everything'), chip('ride_requested', 'Rides'), chip('payment_completed', 'Payments'), chip('page_view', 'App opens')],
+      feed: feedRows,
+      feedCount: feedRows.length,
+      showSources: this.props.showSources ?? true,
+      sources: [
+        { name: 'The Kamel Ride app', path: '64% of activity', count: '8,204', color: MINT, desc: 'Rides, matches and payments as riders use the app.' },
+        { name: 'The website', path: '15% of activity', count: '1,931', color: 'oklch(0.78 0.14 235)', desc: 'People browsing pages and tapping around on the web.' },
+        { name: 'Demo activity', path: '21% of activity', count: '2,712', color: 'oklch(0.82 0.14 92)', desc: 'Sample rides added so the dashboard is never empty.' }
+      ],
+      onLeave: () => this.setState({ hover: null })
+    };
+  }
+}
+
+</script>
+</body>
+</html>
